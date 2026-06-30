@@ -2,47 +2,63 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Türkiye Dağları — Gerçek Harita</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
   html, body {
-    margin: 0; padding: 0; height: 100%;
+    margin: 0; padding: 0; width: 100%; height: 100%;
     font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
     background: radial-gradient(circle at 30% 20%, #1c3a52, #0a1622 70%);
     color: #fff;
-    overflow-x: hidden;
+    overflow: hidden;
   }
-  body { display: flex; flex-direction: column; align-items: center; padding: 10px 8px 26px; min-height: 100vh; }
-  h1 { font-size: 1.1rem; margin: 6px 0 8px; text-align: center; letter-spacing: .3px; opacity: .95; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  h1 { display:none; }
 
-  .hud { display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; justify-content:center; }
-  .pill { background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,.2); border-radius:18px; padding:5px 12px; font-size:.78rem; font-weight:600; backdrop-filter: blur(4px); }
-  .score{color:#ffd93d;} .lives{color:#ff7a7a;} .streak{color:#69f0c0;} .left{color:#9ad6ff;}
+  #gameScreen {
+    display: none;
+    flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+    align-items: stretch;
+  }
 
   #stage {
     position: relative;
     width: 100%;
-    max-width: 560px;
-    aspect-ratio: 1000/560;
-    border-radius: 18px;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.08);
     background: linear-gradient(180deg,#1a4a63,#0d2c3d);
   }
   svg#map { width:100%; height:100%; display:block; }
 
-  /* Yatay (landscape) mod: telefon yan çevrildiğinde oyun alanı ekrana göre yeniden düzenlenir */
-  @media (orientation: landscape) and (max-height: 560px) {
-    body { flex-direction: row; flex-wrap: wrap; align-items: flex-start; justify-content: center; padding: 6px 10px; }
-    h1 { display:none; }
-    #gameScreen { flex-direction: row !important; align-items: flex-start !important; max-width: 100% !important; gap: 12px; }
-    .hud { flex-direction: column; width: 110px; margin-bottom:0; gap:6px; }
-    #stage { max-width: 70vh; max-height: 88vh; width: auto; aspect-ratio: 1000/560; }
-    #tray { max-width: 200px; margin-top:0; min-height: auto; }
-    #feedback { width: 200px; }
-    #startScreen, #overScreen { max-width: 90%; margin-top: 8px; }
+  #bottomBar {
+    flex-shrink: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 12px;
+    background: rgba(5,12,20,.92);
+    border-top: 1px solid rgba(255,255,255,.1);
+    min-height: 64px;
+    max-height: 16vh;
   }
+
+  .hud { display:flex; gap:6px; flex-wrap:nowrap; flex-shrink:0; }
+  .pill { background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,.2); border-radius:14px; padding:4px 8px; font-size:.7rem; font-weight:600; white-space:nowrap; }
+  .score{color:#ffd93d;} .lives{color:#ff7a7a;} .streak{color:#69f0c0;} .left{color:#9ad6ff;}
+
+  #tray { flex:1 1 auto; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  #instructions { font-size: .68rem; color:#bcd; text-align:center; margin-bottom:1px; min-height: 1em; }
+
+  #feedback { flex-shrink:0; max-width:130px; font-size: .68rem; font-weight: 700; text-align:right; }
+
+  #startScreen, #overScreen { max-width: 92vw; text-align: center; padding: 10px; }
 
   #hoverLabel {
     position:absolute;
@@ -68,6 +84,14 @@
   .switch input:checked + .switch-slider { background: linear-gradient(135deg,#69f0c0,#3aa0ff); }
   .switch input:checked + .switch-slider:before { transform: translateX(20px); }
   .option-label { font-size:.86rem; color:#cfe0ee; }
+
+  @keyframes shake {
+    10%, 90% { transform: translateX(-1px); }
+    20%, 80% { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-4px); }
+    40%, 60% { transform: translateX(4px); }
+  }
+  #stage.shake { animation: shake .5s cubic-bezier(.36,.07,.19,.97) both; }
   .province {
     fill: #e9dcc3;
     stroke: #93764a;
@@ -86,18 +110,6 @@
     text-anchor: middle;
   }
 
-  #tray {
-    width: 100%;
-    max-width: 560px;
-    margin-top: 14px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 86px;
-    position: relative;
-  }
-  #instructions { font-size: .82rem; color:#bcd; text-align:center; margin-bottom:6px; min-height: 1.1em; }
-
   .tile {
     background: none;
     color: transparent;
@@ -107,8 +119,8 @@
     background-clip: text;
     animation: tileFlow 3s linear infinite;
     font-weight: 800;
-    font-size: 1.15rem;
-    padding: 10px 6px;
+    font-size: .92rem;
+    padding: 2px 4px;
     cursor: grab;
     touch-action: none;
     position: relative;
@@ -116,7 +128,7 @@
     z-index: 50;
     text-align: center;
     white-space: nowrap;
-    filter: drop-shadow(0 0 8px rgba(255,226,107,.5));
+    filter: drop-shadow(0 0 6px rgba(255,226,107,.5));
   }
   @keyframes tileFlow {
     0% { background-position: 0% 50%; }
@@ -129,8 +141,6 @@
   }
   .tile.flying-correct { animation: none; background-image: none; -webkit-text-fill-color: #37d67a; color:#37d67a; filter: drop-shadow(0 0 14px rgba(105,240,192,.9)); transform: scale(0.4); opacity: 0; }
   .tile.flying-wrong { animation: none; background-image: none; -webkit-text-fill-color: #ff5252; color:#ff5252; filter: drop-shadow(0 0 14px rgba(255,82,82,.9)); transform: scale(0.6) rotate(-8deg); opacity: 0; }
-
-  #feedback { margin-top: 8px; font-size: .85rem; font-weight: 700; min-height: 1.2em; transition: opacity .3s; text-align:center; }
 
   #startScreen, #overScreen {
     max-width: 480px; text-align: center; margin-top: 26px;
@@ -170,25 +180,27 @@
   <button class="big-btn" onclick="startGame()">OYUNA BAŞLA</button>
 </div>
 
-<div id="gameScreen" style="display:none; width:100%; max-width:560px; display:flex; flex-direction:column; align-items:center;">
-  <div class="hud">
-    <div class="pill score">⭐ <span id="scoreVal">0</span></div>
-    <div class="pill lives">❤️ <span id="livesVal">5</span></div>
-    <div class="pill streak">🔥 <span id="streakVal">0</span></div>
-    <div class="pill left">📦 <span id="leftVal">0</span> kaldı</div>
-  </div>
-
+<div id="gameScreen" style="display:none;">
   <div id="stage">
     <svg id="map" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet"></svg>
     <div id="hoverLabel"></div>
   </div>
 
-  <div id="tray">
-    <div id="instructions">Kutucuğu doğru ile sürükle 👇</div>
-    <div id="tile-host"></div>
-  </div>
+  <div id="bottomBar">
+    <div class="hud">
+      <div class="pill score">⭐ <span id="scoreVal">0</span></div>
+      <div class="pill lives">❤️ <span id="livesVal">5</span></div>
+      <div class="pill streak">🔥 <span id="streakVal">0</span></div>
+      <div class="pill left">📦 <span id="leftVal">0</span></div>
+    </div>
 
-  <div id="feedback"></div>
+    <div id="tray">
+      <div id="instructions">Doğru ile sürükle 👇</div>
+      <div id="tile-host"></div>
+    </div>
+
+    <div id="feedback"></div>
+  </div>
 </div>
 
 <div id="overScreen" style="display:none;">
@@ -385,6 +397,11 @@ function handleDrop(tile, mtn, clientPoint){
     streak=0; lives--;
     flash(false, `❌ Yanlış! ${mtn.n} aslında ${mtn.city}'de.`);
     tile.classList.add('flying-wrong');
+    const stageEl = document.getElementById('stage');
+    stageEl.classList.remove('shake');
+    void stageEl.offsetWidth;
+    stageEl.classList.add('shake');
+    setTimeout(()=>stageEl.classList.remove('shake'), 500);
     if(targetNode){
       targetNode.classList.add('hover-target');
       setTimeout(()=>targetNode.classList.remove('hover-target'), 1800);
